@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Atelier Measure | Client Measurement Management System</title>
+  <!-- Tailwind CSS CDN + Google Fonts + Font Awesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #f8f6f2 0%, #f0ebe4 100%);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e9e5de;
+      border-radius: 12px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #b9aa93;
+      border-radius: 12px;
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.12);
+    }
+    .modal-enter {
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .client-card {
+      transition: all 0.2s;
+    }
+    .active-tab {
+      position: relative;
+    }
+    .active-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #c5a06b, #e5c9a8);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-[#3b2b22] to-[#7e5c41] bg-clip-text text-transparent">
+          <i class="fas fa-tape mr-2 text-[#9b7b5c]"></i>Atelier Measure Pro
+        </h1>
+        <p class="text-[#5e4b38] text-sm mt-1 font-medium">individual client profiles · precision measurement archive</p>
+      </div>
+      <button id="resetAllBtn" class="bg-white/80 backdrop-blur-sm border border-[#e0cfbe] text-[#7a5a3e] px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-[#f3ede7] transition shadow-sm">
+        <i class="fas fa-database mr-2"></i> Reset All Data
+      </button>
+    </div>
+
+    <!-- Gender Tabs -->
+    <div class="flex gap-2 md:gap-8 border-b border-[#e2d6ca] mb-8">
+      <button id="femaleTabBtn" class="gender-tab px-5 py-3 text-lg font-semibold transition-all duration-200 text-[#7c5f44] relative">
+        <i class="fas fa-venus mr-2"></i>Female Clients
+      </button>
+      <button id="maleTabBtn" class="gender-tab px-5 py-3 text-lg font-semibold transition-all duration-200 text-[#7c5f44] relative">
+        <i class="fas fa-mars mr-2"></i>Male Clients
+      </button>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
+      <button id="addClientBtn" class="bg-gradient-to-r from-[#8b6b4b] to-[#6b4e32] text-white px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+        <i class="fas fa-plus-circle"></i> New Client Profile
+      </button>
+      <div class="text-sm text-[#8b7356] bg-white/50 px-4 py-2 rounded-full">
+        <i class="fas fa-users mr-2"></i><span id="clientCount">0</span> clients total
+      </div>
+    </div>
+
+    <!-- Client List Container -->
+    <div id="clientListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Dynamic client cards will appear here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="text-center py-16 hidden">
+      <i class="fas fa-user-plus text-6xl text-[#d4c2ae] mb-4"></i>
+      <p class="text-[#9b846b] text-lg">No clients yet. Click "New Client Profile" to start taking measurements.</p>
+    </div>
+  </div>
+
+  <!-- Modal for Adding/Editing Client -->
+  <div id="clientModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4" style="animation: modalFadeIn 0.2s ease-out;">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="sticky top-0 bg-white border-b border-[#e5d9ce] px-6 py-4 flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-[#3b2b22]" id="modalTitle">New Client Profile</h2>
+        <button id="closeModalBtn" class="text-[#9b846b] hover:text-[#5a3e28] text-2xl">&times;</button>
+      </div>
+      <div class="p-6">
+        <form id="clientForm">
+          <input type="hidden" id="clientId" value="">
+          <input type="hidden" id="clientGender" value="">
+          
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-[#5a3e28] mb-2">Client Name *</label>
+            <input type="text" id="clientName" required class="w-full px-4 py-3 border border-[#e2cfbc] rounded-xl focus:border-[#c3a16c] focus:ring-2 focus:ring-[#e2cfb5] transition" placeholder="e.g., Emma Watson">
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Shared Measurements -->
+            <div class="col-span-full">
+              <h3 class="text-lg font-bold text-[#5a3e28] mb-3 flex items-center gap-2"><i class="fas fa-ruler-combined"></i> Core Measurements</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Neck (cm)</label><input type="number" step="0.1" id="neck" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Shoulder Width (cm)</label><input type="number" step="0.1" id="shoulderWidth" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Arm Length (cm)</label><input type="number" step="0.1" id="armLength" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Waist (cm)</label><input type="number" step="0.1" id="waist" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Hips (cm)</label><input type="number" step="0.1" id="hips" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Inseam (cm)</label><input type="number" step="0.1" id="inseam" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+              </div>
+            </div>
+
+            <!-- Female Specific Measurements -->
+            <div id="femaleSpecificFields" class="col-span-full">
+              <h3 class="text-lg font-bold text-[#a5673f] mb-3 flex items-center gap-2"><i class="fas fa-venus"></i> Female-Specific Measurements</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Bust (Full) cm</label><input type="number" step="0.1" id="bustFull" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Underbust cm</label><input type="number" step="0.1" id="underbust" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Bust Span cm</label><input type="number" step="0.1" id="bustSpan" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Bust Depth cm</label><input type="number" step="0.1" id="bustDepth" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">High Hip cm</label><input type="number" step="0.1" id="highHip" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Waist to Hip (vert) cm</label><input type="number" step="0.1" id="waistToHip" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+              </div>
+            </div>
+
+            <!-- Male Specific Measurements -->
+            <div id="maleSpecificFields" class="col-span-full">
+              <h3 class="text-lg font-bold text-[#3b6e6e] mb-3 flex items-center gap-2"><i class="fas fa-mars"></i> Male-Specific Measurements</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Chest cm</label><input type="number" step="0.1" id="chest" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Overarm cm</label><input type="number" step="0.1" id="overarm" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Seat cm</label><input type="number" step="0.1" id="seat" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Rise cm</label><input type="number" step="0.1" id="rise" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Shirt Sleeve cm</label><input type="number" step="0.1" id="shirtSleeve" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+                <div><label class="block text-sm font-medium text-[#7c6044] mb-1">Crotch Depth cm</label><input type="number" step="0.1" id="crotchDepth" class="w-full px-3 py-2 border border-[#e2cfbc] rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex gap-3 justify-end">
+            <button type="button" id="cancelModalBtn" class="px-6 py-2 border border-[#d4c2ae] rounded-xl text-[#7a5a3e] hover:bg-gray-50">Cancel</button>
+            <button type="submit" class="px-6 py-2 bg-[#8b6b4b] text-white rounded-xl hover:bg-[#6b4e32] transition">Save Client</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Storage keys
+    const STORAGE_KEY = "atelier_clients_db";
+    let currentGender = "female";
+    let clients = [];
+
+    // Load clients from localStorage
+    function loadClients() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        clients = JSON.parse(stored);
+      } else {
+        clients = [];
+      }
+      updateClientCount();
+      renderClientList();
+    }
+
+    // Save clients to localStorage
+    function saveClients() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+      updateClientCount();
+      renderClientList();
+    }
+
+    // Update client count display
+    function updateClientCount() {
+      const filteredCount = clients.filter(c => c.gender === currentGender).length;
+      document.getElementById('clientCount').textContent = filteredCount;
+      const emptyState = document.getElementById('emptyState');
+      if (filteredCount === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    // Render client cards
+    function renderClientList() {
+      const container = document.getElementById('clientListContainer');
+      const filteredClients = clients.filter(c => c.gender === currentGender);
+      
+      if (filteredClients.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = filteredClients.map(client => `
+        <div class="bg-white rounded-2xl shadow-md border border-[#ede3d7] overflow-hidden card-hover">
+          <div class="bg-gradient-to-r from-[#fefaf5] to-[#faf5ed] p-5 border-b border-[#f0e3d8]">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-xl font-bold text-[#3b2b22]">${escapeHtml(client.name)}</h3>
+                <p class="text-xs text-[#b1987a] mt-1">
+                  <i class="fas ${client.gender === 'female' ? 'fa-venus' : 'fa-mars'} mr-1"></i>
+                  ${client.gender === 'female' ? 'Female Client' : 'Male Client'} · ${new Date(client.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="editClient('${client.id}')" class="text-[#9b846b] hover:text-[#6b4e32] transition">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteClient('${client.id}')" class="text-[#c9a87c] hover:text-[#a5523a] transition">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="p-5 space-y-3">
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="flex justify-between"><span class="text-[#8b7356]">Neck:</span><span class="font-semibold">${client.measurements.neck || '—'} cm</span></div>
+              <div class="flex justify-between"><span class="text-[#8b7356]">Shoulder:</span><span class="font-semibold">${client.measurements.shoulderWidth || '—'} cm</span></div>
+              <div class="flex justify-between"><span class="text-[#8b7356]">Arm:</span><span class="font-semibold">${client.measurements.armLength || '—'} cm</span></div>
+              <div class="flex justify-between"><span class="text-[#8b7356]">Waist:</span><span class="font-semibold">${client.measurements.waist || '—'} cm</span></div>
+              <div class="flex justify-between"><span class="text-[#8b7356]">Hips:</span><span class="font-semibold">${client.measurements.hips || '—'} cm</span></div>
+              <div class="flex justify-between"><span class="text-[#8b7356]">Inseam:</span><span class="font-semibold">${client.measurements.inseam || '—'} cm</span></div>
+            </div>
+            ${client.gender === 'female' ? `
+              <div class="border-t border-[#f0e3d8] pt-3 mt-2">
+                <p class="text-xs font-semibold text-[#a5673f] mb-2"><i class="fas fa-venus-mars"></i> Female Details</p>
+                <div class="grid grid-cols-2 gap-1 text-xs">
+                  <div>Bust: ${client.measurements.bustFull || '—'}</div>
+                  <div>Underbust: ${client.measurements.underbust || '—'}</div>
+                  <div>Bust Span: ${client.measurements.bustSpan || '—'}</div>
+                  <div>High Hip: ${client.measurements.highHip || '—'}</div>
+                </div>
+              </div>
+            ` : `
+              <div class="border-t border-[#f0e3d8] pt-3 mt-2">
+                <p class="text-xs font-semibold text-[#3b6e6e] mb-2"><i class="fas fa-mars"></i> Male Details</p>
+                <div class="grid grid-cols-2 gap-1 text-xs">
+                  <div>Chest: ${client.measurements.chest || '—'}</div>
+                  <div>Overarm: ${client.measurements.overarm || '—'}</div>
+                  <div>Seat: ${client.measurements.seat || '—'}</div>
+                  <div>Rise: ${client.measurements.rise || '—'}</div>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Open modal for new/edit
+    function openModal(clientData = null, gender = null) {
+      const modal = document.getElementById('clientModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const femaleFields = document.getElementById('femaleSpecificFields');
+      const maleFields = document.getElementById('maleSpecificFields');
+      
+      // Reset form
+      document.getElementById('clientForm').reset();
+      document.getElementById('clientId').value = '';
+      
+      if (clientData) {
+        modalTitle.textContent = `Edit ${clientData.name}`;
+        document.getElementById('clientId').value = clientData.id;
+        document.getElementById('clientName').value = clientData.name;
+        document.getElementById('clientGender').value = clientData.gender;
+        
+        // Fill shared measurements
+        const m = clientData.measurements;
+        document.getElementById('neck').value = m.neck || '';
+        document.getElementById('shoulderWidth').value = m.shoulderWidth || '';
+        document.getElementById('armLength').value = m.armLength || '';
+        document.getElementById('waist').value = m.waist || '';
+        document.getElementById('hips').value = m.hips || '';
+        document.getElementById('inseam').value = m.inseam || '';
+        
+        if (clientData.gender === 'female') {
+          femaleFields.classList.remove('hidden');
+          maleFields.classList.add('hidden');
+          document.getElementById('bustFull').value = m.bustFull || '';
+          document.getElementById('underbust').value = m.underbust || '';
+          document.getElementById('bustSpan').value = m.bustSpan || '';
+          document.getElementById('bustDepth').value = m.bustDepth || '';
+          document.getElementById('highHip').value = m.highHip || '';
+          document.getElementById('waistToHip').value = m.waistToHip || '';
+        } else {
+          femaleFields.classList.add('hidden');
+          maleFields.classList.remove('hidden');
+          document.getElementById('chest').value = m.chest || '';
+          document.getElementById('overarm').value = m.overarm || '';
+          document.getElementById('seat').value = m.seat || '';
+          document.getElementById('rise').value = m.rise || '';
+          document.getElementById('shirtSleeve').value = m.shirtSleeve || '';
+          document.getElementById('crotchDepth').value = m.crotchDepth || '';
+        }
+      } else {
+        modalTitle.textContent = 'New Client Profile';
+        const selectedGender = gender || currentGender;
+        document.getElementById('clientGender').value = selectedGender;
+        if (selectedGender === 'female') {
+          femaleFields.classList.remove('hidden');
+          maleFields.classList.add('hidden');
+        } else {
+          femaleFields.classList.add('hidden');
+          maleFields.classList.remove('hidden');
+        }
+      }
+      
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('clientModal').classList.add('hidden');
+    }
+
+    // Save client
+    function saveClient(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('clientId').value;
+      const name = document.getElementById('clientName').value.trim();
+      const gender = document.getElementById('clientGender').value;
+      
+      if (!name) {
+        alert('Please enter client name');
+        return;
+      }
+      
+      // Collect measurements
+      const measurements = {
+        neck: parseFloat(document.getElementById('neck').value) || null,
+        shoulderWidth: parseFloat(document.getElementById('shoulderWidth').value) || null,
+        armLength: parseFloat(document.getElementById('armLength').value) || null,
+        waist: parseFloat(document.getElementById('waist').value) || null,
+        hips: parseFloat(document.getElementById('hips').value) || null,
+        inseam: parseFloat(document.getElementById('inseam').value) || null
+      };
+      
+      if (gender === 'female') {
+        measurements.bustFull = parseFloat(document.getElementById('bustFull').value) || null;
+        measurements.underbust = parseFloat(document.getElementById('underbust').value) || null;
+        measurements.bustSpan = parseFloat(document.getElementById('bustSpan').value) || null;
+        measurements.bustDepth = parseFloat(document.getElementById('bustDepth').value) || null;
+        measurements.highHip = parseFloat(document.getElementById('highHip').value) || null;
+        measurements.waistToHip = parseFloat(document.getElementById('waistToHip').value) || null;
+      } else {
+        measurements.chest = parseFloat(document.getElementById('chest').value) || null;
+        measurements.overarm = parseFloat(document.getElementById('overarm').value) || null;
+        measurements.seat = parseFloat(document.getElementById('seat').value) || null;
+        measurements.rise = parseFloat(document.getElementById('rise').value) || null;
+        measurements.shirtSleeve = parseFloat(document.getElementById('shirtSleeve').value) || null;
+        measurements.crotchDepth = parseFloat(document.getElementById('crotchDepth').value) || null;
+      }
+      
+      if (id) {
+        // Update existing client
+        const index = clients.findIndex(c => c.id === id);
+        if (index !== -1) {
+          clients[index] = { ...clients[index], name, measurements, updatedAt: new Date().toISOString() };
+        }
+      } else {
+        // Create new client
+        const newClient = {
+          id: Date.now().toString(),
+          name,
+          gender,
+          measurements,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        clients.push(newClient);
+      }
+      
+      saveClients();
+      closeModal();
+    }
+    
+    // Edit client
+    window.editClient = function(id) {
+      const client = clients.find(c => c.id === id);
+      if (client) {
+        openModal(client);
+      }
+    };
+    
+    // Delete client
+    window.deleteClient = function(id) {
+      if (confirm('Delete this client and all their measurements?')) {
+        clients = clients.filter(c => c.id !== id);
+        saveClients();
+      }
+    };
+    
+    function resetAllData() {
+      if (confirm('⚠️ WARNING: This will delete ALL clients (both male and female). This action cannot be undone. Continue?')) {
+        clients = [];
+        saveClients();
+      }
+    }
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+    
+    // Event listeners
+    document.getElementById('addClientBtn').addEventListener('click', () => openModal(null, currentGender));
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+    document.getElementById('clientForm').addEventListener('submit', saveClient);
+    document.getElementById('resetAllBtn').addEventListener('click', resetAllData);
+    
+    document.getElementById('femaleTabBtn').addEventListener('click', () => {
+      currentGender = 'female';
+      document.getElementById('femaleTabBtn').classList.add('active-tab');
+      document.getElementById('maleTabBtn').classList.remove('active-tab');
+      renderClientList();
+      updateClientCount();
+    });
+    
+    document.getElementById('maleTabBtn').addEventListener('click', () => {
+      currentGender = 'male';
+      document.getElementById('maleTabBtn').classList.add('active-tab');
+      document.getElementById('femaleTabBtn').classList.remove('active-tab');
+      renderClientList();
+      updateClientCount();
+    });
+    
+    // Set initial active tab
+    document.getElementById('femaleTabBtn').classList.add('active-tab');
+    
+    // Initialize
+    loadClients();
+  </script>
+</body>
+</html>
